@@ -143,7 +143,7 @@ export default function Notifications() {
                   <button
                     type='button'
                     onClick={() => markRead(n.id)}
-                    className="rounded-xl bg-cyan-600 px-3 py-1.5 text-sm font-semibold text-white"
+                    className="rounded-xl bg-cyan-700 px-3 py-1.5 text-sm font-semibold text-white hover:bg-cyan-600"
                   >
                     Mark as read
                   </button>

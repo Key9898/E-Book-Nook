@@ -16,7 +16,6 @@ import FAQs from './components/FAQs/FAQs'
 import TermsOfService from './components/TermsOfService/TermsOfService'
 import PrivacyPolicy from './components/PrivacyPolicy/PrivacyPolicy'
 
-
 function App() {
   const [currentPage, setCurrentPage] = useState(() => {
     const path = typeof window !== 'undefined' ? window.location.pathname : ''
@@ -25,6 +24,18 @@ function App() {
     if (path === '/admin-panel') return 'adminPanel'
     return hash || saved || 'home'
   })
+
+  // ✅ NEW: Navigate Function with URL Fix
+  const handleNavigate = (slug: string) => {
+    // Admin Panel ကနေ ထွက်ရင် URL ကို အရင်ရှင်းမယ်
+    if (window.location.pathname === '/admin-panel') {
+      window.history.pushState({}, '', `/#${slug}`)
+    } else {
+      window.location.hash = slug
+    }
+    setCurrentPage(slug)
+    window.scrollTo({ top: 0, behavior: 'auto' })
+  }
 
   // Sync current page to URL and localStorage
   useEffect(() => {
@@ -42,10 +53,6 @@ function App() {
       }
     }
     localStorage.setItem('current_page', currentPage)
-  }, [currentPage])
-
-  useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'auto' })
   }, [currentPage])
 
   // React to manual URL changes (hash/back/forward)
@@ -76,7 +83,7 @@ function App() {
 
   useEffect(() => {
     if (!currentUser && currentPage === 'readingGoals') {
-      setCurrentPage('home')
+      handleNavigate('home')
     }
   }, [currentUser, currentPage])
 
@@ -100,7 +107,7 @@ function App() {
 
   useEffect(() => {
     if (currentUser && accountSettingIntent && currentPage === 'accountSetting') {
-      setCurrentPage(lastPageBeforeAuth || 'home')
+      handleNavigate(lastPageBeforeAuth || 'home')
       setAccountSettingIntent(false)
       setLastPageBeforeAuth(null)
     }
@@ -113,12 +120,12 @@ function App() {
         if (!isAdmin) {
           return (
             <>
-              <Header onNavigate={setCurrentPage} />
+              <Header onNavigate={handleNavigate} />
               <div className="min-h-[calc(100vh-4rem)] grid place-items-center bg-gradient-to-br from-slate-900/80 via-cyan-900/80 to-sky-900/80">
                 <div className="max-w-xl w-full rounded-xl bg-white/40 backdrop-blur p-8 text-center shadow-xl ring-1 ring-white/30">
                   <h2 className="text-2xl font-semibold text-slate-900">Page Not Found</h2>
                   <p className="mt-2 text-slate-700">The page you’re looking for doesn’t exist.</p>
-                  <button type="button" onClick={() => setCurrentPage('home')} className="mt-6 px-6 py-3 bg-cyan-700 text-white rounded-xl shadow-lg hover:bg-cyan-600">Go Home</button>
+                  <button type="button" onClick={() => handleNavigate('home')} className="mt-6 px-6 py-3 bg-cyan-700 text-white rounded-xl shadow-lg hover:bg-cyan-600">Go Home</button>
                 </div>
               </div>
             </>
@@ -126,7 +133,7 @@ function App() {
         }
         return (
           <>
-            <Header onNavigate={setCurrentPage} />
+            <Header onNavigate={handleNavigate} />
             <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-10">
               <h1 className="text-2xl font-bold text-slate-900">Admin Panel</h1>
               <p className="mt-1 text-slate-700">Send system notifications to all users.</p>
@@ -136,10 +143,13 @@ function App() {
                 const category = String(fd.get('category') || '')
                 const title = String(fd.get('title') || '')
                 const message = String(fd.get('message') || '')
+                
                 try {
                   if (!auth?.currentUser || !auth?.currentUser?.email) throw new Error('not_auth')
                   if (!db) throw new Error('no_db')
+                  
                   const { addDoc, collection, serverTimestamp } = await import('firebase/firestore')
+                  
                   await addDoc(collection(db, 'notifications'), {
                     type: 'system',
                     category,
@@ -149,9 +159,13 @@ function App() {
                     readBy: [],
                     createdAt: serverTimestamp(),
                   })
+                  
                   window.dispatchEvent(new CustomEvent('app:notify', { detail: { type: 'success', title: 'Notification sent', message: 'System notification has been dispatched.' } }))
                   ;(e.currentTarget as HTMLFormElement).reset()
+                  
                 } catch (err) {
+                  // ✅ NEW: Error Logging for debugging
+                  console.error("REAL ERROR:", err);
                   window.dispatchEvent(new CustomEvent('app:notify', { detail: { type: 'error', title: 'Send failed', message: 'Could not send notification.' } }))
                 }
               }}>
@@ -181,10 +195,10 @@ function App() {
       }
       case 'accountSetting':
         return currentUser ? (
-          <AccountMain onNavigate={setCurrentPage} />
+          <AccountMain onNavigate={handleNavigate} />
         ) : accountSettingIntent ? (
           <>
-            <Header onNavigate={setCurrentPage} />
+            <Header onNavigate={handleNavigate} />
             <div className="min-h-[calc(100vh-4rem)] bg-gradient-to-br from-slate-900/80 via-cyan-900/80 to-sky-900/80 flex items-center justify-center">
               <div className="max-w-xl w-full rounded-xl bg-white/40 backdrop-blur p-8 text-center shadow-xl ring-1 ring-white/30">
                 <div className="mx-auto mb-4 size-12 rounded-full bg-white/50 grid place-items-center">
@@ -197,30 +211,30 @@ function App() {
             </div>
           </>
         ) : (
-          <HeroSection onNavigate={setCurrentPage} />
+          <HeroSection onNavigate={handleNavigate} />
         )
       case 'readingGoals':
-        return currentUser ? <ReadingGoals onNavigate={setCurrentPage} /> : <HeroSection onNavigate={setCurrentPage} />
+        return currentUser ? <ReadingGoals onNavigate={handleNavigate} /> : <HeroSection onNavigate={handleNavigate} />
       case 'collections':
-        return <Collections onNavigate={setCurrentPage} />
+        return <Collections onNavigate={handleNavigate} />
         case 'pdfBooks':
-        return <PdfBooks onNavigate={setCurrentPage} />
+        return <PdfBooks onNavigate={handleNavigate} />
         case 'audiobooks':
-        return <Audiobooks onNavigate={setCurrentPage} />
+        return <Audiobooks onNavigate={handleNavigate} />
         case 'reviews':
-        return <Reviews onNavigate={setCurrentPage} />
+        return <Reviews onNavigate={handleNavigate} />
         case 'ourStory':
-        return <OurStory onNavigate={setCurrentPage} />
+        return <OurStory onNavigate={handleNavigate} />
         case 'feedbacks':
-        return <Feedbacks onNavigate={setCurrentPage} />
+        return <Feedbacks onNavigate={handleNavigate} />
         case 'faqs':
-        return <FAQs onNavigate={setCurrentPage} />
+        return <FAQs onNavigate={handleNavigate} />
         case 'termsOfService':
-        return <TermsOfService onNavigate={setCurrentPage} />
+        return <TermsOfService onNavigate={handleNavigate} />
         case 'privacyPolicy':
-        return <PrivacyPolicy onNavigate={setCurrentPage} />
+        return <PrivacyPolicy onNavigate={handleNavigate} />
       default:
-        return <HeroSection onNavigate={setCurrentPage} />
+        return <HeroSection onNavigate={handleNavigate} />
     }
   }
 
