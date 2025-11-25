@@ -14,8 +14,8 @@ export const description = "User monthly activity (12 months)"
 type LinePoint = { month: string; pdf: number; audio: number }
 
 const chartConfig = {
-  pdf: { label: "PDF", color: "var(--chart-1)" },
-  audio: { label: "Audio", color: "var(--chart-2)" },
+  pdf: { label: "PDF", color: "#fb7185" },
+  audio: { label: "Audio", color: "#0891b2" },
 } satisfies ChartConfig
 
 export function ChartLineMultiple({ data, title = "Monthly Activity", desc = "Last 12 months" }: { data: LinePoint[]; title?: string; desc?: string }) {
@@ -44,20 +44,8 @@ export function ChartLineMultiple({ data, title = "Monthly Activity", desc = "La
               tickFormatter={(value) => value.slice(0, 3)}
             />
             <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
-            <Line
-              dataKey="pdf"
-              type="monotone"
-              stroke="var(--chart-1)"
-              strokeWidth={2}
-              dot={false}
-            />
-            <Line
-              dataKey="audio"
-              type="monotone"
-              stroke="var(--chart-2)"
-              strokeWidth={2}
-              dot={false}
-            />
+            <Line dataKey="pdf" type="monotone" stroke="var(--color-pdf)" strokeWidth={2} dot={false} />
+            <Line dataKey="audio" type="monotone" stroke="var(--color-audio)" strokeWidth={2} dot={false} />
           </RLineChart>
         </ChartContainer>
       </CardContent>

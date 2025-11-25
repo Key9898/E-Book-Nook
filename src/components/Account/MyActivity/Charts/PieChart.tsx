@@ -20,7 +20,7 @@ export function ChartPieDonutText({ data, title = "Activity Breakdown", desc = "
   }, [data])
 
   const colored = React.useMemo(() => {
-    const colors = ["var(--chart-1)", "var(--chart-2)", "var(--chart-3)", "var(--chart-4)", "var(--chart-5)"]
+    const colors = ["#fb7185", "#0891b2", "#a78bfa", "#34d399", "#fbbf24"]
     return (Array.isArray(data) ? data : []).map((d, i) => ({ ...d, fill: colors[i % colors.length] }))
   }, [data])
 

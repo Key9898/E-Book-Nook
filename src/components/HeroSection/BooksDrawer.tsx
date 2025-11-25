@@ -127,7 +127,7 @@ export default function BooksDrawer({ open: openProp, onOpenChange, onNavigate }
                             <div className="relative flex min-w-0 flex-1 items-center">
                               <span className="relative inline-block shrink-0">
                                 {book.type === 'pdf' ? (
-                                  <FaFilePdf aria-hidden className="size-10 text-rose-600" />
+                                  <FaFilePdf aria-hidden className="size-10 text-rose-400" />
                                 ) : (
                                   <LuFileAudio aria-hidden className="size-10 text-cyan-600" />
                                 )}

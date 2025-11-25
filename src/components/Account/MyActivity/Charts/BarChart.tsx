@@ -13,7 +13,7 @@ export const description = "Monthly totals bar chart"
 
 type BarPoint = { month: string; total: number }
 
-const chartConfig = { total: { label: "Total", color: "var(--chart-1)" } } satisfies ChartConfig
+const chartConfig = { total: { label: "Total", color: "#0891b2" } } satisfies ChartConfig
 
 export function ChartBarDefault({ data, title = "Totals by Month", desc = "Last 12 months" }: { data: BarPoint[]; title?: string; desc?: string }) {
   return (

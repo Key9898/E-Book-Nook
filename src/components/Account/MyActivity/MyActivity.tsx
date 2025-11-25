@@ -115,6 +115,7 @@ export default function MyActivity() {
       let units: Set<string> = new Set()
       let completedPdf = 0
       let completedAudio = 0
+      let audioDurMin = 0
       let pdfCompletedTs: number[] = []
       let audioCompletedTs: number[] = []
       let readingLastTs: number[] = []
@@ -149,6 +150,7 @@ export default function MyActivity() {
           audioLastTs.push(...apLast)
           completedAudio = apSnap.docs.filter((d) => Number((d.data() as any)?.completedTs || 0) > 0).length
           audioCompletedTs = apSnap.docs.map((d) => Number((d.data() as any)?.completedTs || 0)).filter((x) => x > 0)
+          audioDurMin = Math.floor(apSnap.docs.reduce((s, d) => s + Math.max(0, Number((d.data() as any)?.durationMs || 0)), 0) / 60000)
         } catch {}
         try {
           const actSnap = await getDocs(collection(db, 'users', uid, 'appActivity'))
@@ -224,7 +226,7 @@ export default function MyActivity() {
       const prev30 = finishedList.filter((d) => Number(d.finishedTs || 0) >= prev30Start && Number(d.finishedTs || 0) < last30Start).length
       const delta = Math.max(0, last30 - prev30)
 
-      const totalMin = readingLogs.reduce((s, x) => s + Math.max(0, Number(x.minutes || 0)), 0)
+      const totalMin = Math.max(0, Math.floor(audioDurMin))
       const weekStart = now - 7 * oneDay
       const weekMin = readingLogs.filter((x) => Number(x.ts || 0) >= weekStart).reduce((s, x) => s + Math.max(0, Number(x.minutes || 0)), 0)
 
@@ -308,7 +310,7 @@ export default function MyActivity() {
       setWeekData(weekPoints)
       // initial compute
       const unitsSet = units
-      recompute(finishedDocs, readingLogs, activityTs, audioLastTs, pdfCompletedTs, audioCompletedTs, totalTarget, unitsSet)
+      recompute(readingLogs, activityTs, audioLastTs, pdfCompletedTs, audioCompletedTs, totalTarget, unitsSet, totalMin)
       const daysSet = new Set<number>([...readingLastTs, ...audioLastTs, ...pdfCompletedTs, ...audioCompletedTs].map((ts) => startOfDay(Number(ts || 0))).filter((v) => v > 0))
       setActivityDates(Array.from(daysSet).map((ts) => new Date(ts)))
     }
@@ -336,25 +338,25 @@ export default function MyActivity() {
   }, [selectedDate, user?.uid])
 
   const recompute = (
-    finishedDocs: { id: string; status?: string; finishedTs?: number }[],
     readingLogs: { minutes: number; ts: number }[],
     activityTs: number[],
     audioLastTs: number[],
     pdfCompletedTs: number[],
     audioCompletedTs: number[],
     totalTarget: number,
-    units: Set<string>
+    units: Set<string>,
+    audioDurMin: number = 0
   ) => {
     const now = Date.now()
-    const finishedList = finishedDocs.filter((d) => String(d.status || '').toLowerCase() === 'finished')
-    const totalFinishedCount = finishedList.length
+    const totalFinishedCount = (pdfCompletedTs?.length || 0) + (audioCompletedTs?.length || 0)
     const oneDay = 24 * 60 * 60 * 1000
     const last30Start = now - 30 * oneDay
     const prev30Start = now - 60 * oneDay
-    const last30 = finishedList.filter((d) => Number(d.finishedTs || 0) >= last30Start).length
-    const prev30 = finishedList.filter((d) => Number(d.finishedTs || 0) >= prev30Start && Number(d.finishedTs || 0) < last30Start).length
+    const allCompleted = [...(pdfCompletedTs || []), ...(audioCompletedTs || [])]
+    const last30 = allCompleted.filter((ts) => Number(ts || 0) >= last30Start).length
+    const prev30 = allCompleted.filter((ts) => Number(ts || 0) >= prev30Start && Number(ts || 0) < last30Start).length
     const delta = Math.max(0, last30 - prev30)
-    const totalMin = readingLogs.reduce((s, x) => s + Math.max(0, Number(x.minutes || 0)), 0)
+    const totalMin = Math.max(0, Math.floor(audioDurMin))
     const weekStart = now - 7 * oneDay
     const weekMin = readingLogs.filter((x) => Number(x.ts || 0) >= weekStart).reduce((s, x) => s + Math.max(0, Number(x.minutes || 0)), 0)
     const days = new Set<number>(activityTs.map((ts) => startOfDay(ts)))
@@ -408,13 +410,10 @@ export default function MyActivity() {
     setLineData(nextLine)
     const finishedByMonth = new Map<string, number>()
     months.forEach((m) => finishedByMonth.set(m.key, 0))
-    finishedDocs.forEach((d) => {
-      const ts = Number(d.finishedTs || 0)
-      if (ts > 0) {
-        const dt = new Date(ts)
-        const key = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}`
-        if (finishedByMonth.has(key)) finishedByMonth.set(key, (finishedByMonth.get(key) || 0) + 1)
-      }
+    ;[...pdfCompletedTs, ...audioCompletedTs].forEach((ts) => {
+      const dt = new Date(Number(ts || 0))
+      const key = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}`
+      if (finishedByMonth.has(key)) finishedByMonth.set(key, (finishedByMonth.get(key) || 0) + 1)
     })
     const nextBar = months.map((m) => ({ month: m.label, total: finishedByMonth.get(m.key) || 0 }))
     setBarData(nextBar)
@@ -440,7 +439,6 @@ export default function MyActivity() {
   useEffect(() => {
     const uid = user?.uid || ''
     if (!(uid && db)) return
-    let finishedDocs: { id: string; status?: string; finishedTs?: number }[] = []
     let readingLogs: { minutes: number; ts: number }[] = []
     let activityTs: number[] = []
     let totalTarget = 0
@@ -448,38 +446,39 @@ export default function MyActivity() {
     let pdfCompletedTs: number[] = []
     let audioCompletedTs: number[] = []
     let audioLastTs: number[] = []
-    const u1 = onSnapshot(collection(db, 'users', uid, 'my_library'), (snap) => {
-      finishedDocs = snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) }))
-      recompute(finishedDocs, readingLogs, activityTs, audioLastTs, pdfCompletedTs, audioCompletedTs, totalTarget, units)
+    let audioDurMin: number = 0
+    const u1 = onSnapshot(collection(db, 'users', uid, 'my_library'), () => {
+      recompute(readingLogs, activityTs, audioLastTs, pdfCompletedTs, audioCompletedTs, totalTarget, units, audioDurMin)
     })
     const u2 = onSnapshot(collection(db, 'users', uid, 'readingTime'), (snap) => {
       readingLogs = snap.docs.map((d) => ({ minutes: Number((d.data() as any)?.minutes || 0), ts: Number((d.data() as any)?.ts || 0) })).filter((x) => x.minutes > 0 && x.ts > 0)
-      recompute(finishedDocs, readingLogs, activityTs, audioLastTs, pdfCompletedTs, audioCompletedTs, totalTarget, units)
+      recompute(readingLogs, activityTs, audioLastTs, pdfCompletedTs, audioCompletedTs, totalTarget, units, audioDurMin)
     })
     const u3 = onSnapshot(collection(db, 'users', uid, 'readingProgress'), (snap) => {
       const rpLast = snap.docs.map((d) => Number((d.data() as any)?.lastActivityTs || 0)).filter((x) => x > 0)
       activityTs = [...rpLast]
       pdfCompletedTs = snap.docs.map((d) => Number((d.data() as any)?.completedTs || 0)).filter((x) => x > 0)
-      recompute(finishedDocs, readingLogs, activityTs, audioLastTs, pdfCompletedTs, audioCompletedTs, totalTarget, units)
+      recompute(readingLogs, activityTs, audioLastTs, pdfCompletedTs, audioCompletedTs, totalTarget, units, audioDurMin)
     })
     const u4 = onSnapshot(collection(db, 'users', uid, 'audioProgress'), (snap) => {
       const apLast = snap.docs.map((d) => Number((d.data() as any)?.lastActivityTs || 0)).filter((x) => x > 0)
       activityTs = [...activityTs, ...apLast]
       audioLastTs = [...apLast]
       audioCompletedTs = snap.docs.map((d) => Number((d.data() as any)?.completedTs || 0)).filter((x) => x > 0)
-      recompute(finishedDocs, readingLogs, activityTs, audioLastTs, pdfCompletedTs, audioCompletedTs, totalTarget, units)
+      audioDurMin = Math.floor(snap.docs.reduce((s, d) => s + Math.max(0, Number((d.data() as any)?.durationMs || 0)), 0) / 60000)
+      recompute(readingLogs, activityTs, audioLastTs, pdfCompletedTs, audioCompletedTs, totalTarget, units, audioDurMin)
     })
     const u5 = onSnapshot(collection(db, 'users', uid, 'appActivity'), (snap) => {
       const arr = snap.docs.map((d) => Number((d.data() as any)?.ts || 0)).filter((x) => x > 0)
       activityTs = [...activityTs, ...arr]
-      recompute(finishedDocs, readingLogs, activityTs, audioLastTs, pdfCompletedTs, audioCompletedTs, totalTarget, units)
+      recompute(readingLogs, activityTs, audioLastTs, pdfCompletedTs, audioCompletedTs, totalTarget, units, audioDurMin)
     })
     const u6 = onSnapshot(collection(db, 'users', uid, 'readingGoals'), (snap) => {
       totalTarget = 0
       units = new Set()
       const goals = snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) }))
       goals.forEach((g) => { if (g.id !== 'current') { totalTarget += Number(g?.target || g?.targetAmount || 0); const u = String(g?.unit || '').trim(); if (u) units.add(u) } })
-      recompute(finishedDocs, readingLogs, activityTs, audioLastTs, pdfCompletedTs, audioCompletedTs, totalTarget, units)
+      recompute(readingLogs, activityTs, audioLastTs, pdfCompletedTs, audioCompletedTs, totalTarget, units, audioDurMin)
     })
     return () => { u1(); u2(); u3(); u4(); u5(); u6() }
   }, [user?.uid])
@@ -553,7 +552,15 @@ export default function MyActivity() {
           <div className="rounded-xl border border-slate-200 bg-white p-6">
             <div className="text-sm font-bold text-slate-600">Calendar</div>
             <div className="mt-4">
-              <Calendar selected={selectedDate} onSelect={(d: Date | undefined) => { setSelectedDate(d); }} className="w-full text-[11px]" modifiers={{ activity: activityDates }} classNames={{ day: "rdp-day_activity:bg-cyan-100 rdp-day_activity:text-cyan-900" }} />
+              <Calendar
+                selected={selectedDate}
+                onSelect={(d: Date | undefined) => { setSelectedDate(d); }}
+                className="w-full"
+                modifiers={{ activity: activityDates }}
+                classNames={{
+                  day: "rdp-day_activity:bg-cyan-50 rdp-day_activity:text-cyan-900 rdp-day_activity:after:content-[''] rdp-day_activity:after:w-1.5 rdp-day_activity:after:h-1.5 rdp-day_activity:after:bg-cyan-600 rdp-day_activity:after:rounded-full rdp-day_activity:after:absolute rdp-day_activity:after:bottom-1 rdp-day_activity:after:left-1/2 rdp-day_activity:after:-translate-x-1/2"
+                }}
+              />
             </div>
             <div className="mt-4">
               <div className="text-sm text-slate-500">Note</div>
