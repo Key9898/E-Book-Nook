@@ -25,9 +25,14 @@ export default function Header({ onNavigate }: HeaderProps) {
   const [isSticky, setIsSticky] = useState(false)
   const [authOpen, setAuthOpen] = useState(false)
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin')
-  const [activeSlug, setActiveSlug] = useState<string | null>(null)
   const [userEmail, setUserEmail] = useState<string | null>(null)
   const [userDisplayName, setUserDisplayName] = useState<string | null>(null)
+  const [loc, setLoc] = useState<{ pathname: string; hash: string }>({ pathname: window.location.pathname, hash: window.location.hash })
+  const isActive = (path: string) => {
+    const { pathname, hash } = loc
+    if (path.startsWith('#')) return hash === path
+    return pathname === path
+  }
 
   const handleSignOut = async () => {
     if (!(auth as any)?.app) {
@@ -45,13 +50,10 @@ export default function Header({ onNavigate }: HeaderProps) {
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
-  // Restore active menu from hash (do NOT fallback to localStorage on home)
+  // Clear persisted selection on home (no longer needed for active state)
   useEffect(() => {
     const fromHash = window.location.hash.replace('#', '')
-    if (fromHash && fromHash !== 'home') {
-      setActiveSlug(fromHash)
-    } else {
-      setActiveSlug(null)
+    if (!fromHash || fromHash === 'home') {
       try { localStorage.removeItem('header_active_slug') } catch {}
     }
   }, [])
@@ -60,15 +62,15 @@ export default function Header({ onNavigate }: HeaderProps) {
   useEffect(() => {
     const applyFromHash = () => {
       const h = window.location.hash.replace('#', '')
-      if (h && h !== 'home') {
-        setActiveSlug(h)
-      } else {
-        setActiveSlug(null)
+      if (!h || h === 'home') {
         try { localStorage.removeItem('header_active_slug') } catch {}
       }
+      setLoc({ pathname: window.location.pathname, hash: window.location.hash })
     }
     window.addEventListener('hashchange', applyFromHash)
-    return () => window.removeEventListener('hashchange', applyFromHash)
+    const onPop = () => setLoc({ pathname: window.location.pathname, hash: window.location.hash })
+    window.addEventListener('popstate', onPop)
+    return () => { window.removeEventListener('hashchange', applyFromHash); window.removeEventListener('popstate', onPop) }
   }, [])
 
   useEffect(() => {
@@ -111,7 +113,7 @@ export default function Header({ onNavigate }: HeaderProps) {
         <div className="flex items-center gap-x-3">
           <button
             type="button"
-            onClick={() => { localStorage.removeItem('header_active_slug'); setActiveSlug(null); onNavigate?.('home') }}
+            onClick={() => { localStorage.removeItem('header_active_slug'); onNavigate?.('home') }}
             className="-m-1.5 p-1.5"
           >
             <span className="sr-only">E-Book Nook</span>
@@ -135,8 +137,8 @@ export default function Header({ onNavigate }: HeaderProps) {
               <button
                 key={item.slug}
                 type="button"
-                onClick={() => { setActiveSlug(item.slug); localStorage.setItem('header_active_slug', item.slug); onNavigate?.(item.slug) }}
-                className={`text-base font-semibold ${activeSlug === item.slug ? 'text-sky-600' : 'text-cyan-600 hover:text-cyan-500'}`}
+                onClick={() => { localStorage.setItem('header_active_slug', item.slug); onNavigate?.(item.slug) }}
+                className={`text-base font-semibold ${isActive(item.slug === 'ourStory' ? '#ourStory' : `/${item.slug}`) ? 'text-sky-600' : 'text-cyan-600 hover:text-cyan-500'}`}
               >
                 {item.name}
               </button>
@@ -152,8 +154,8 @@ export default function Header({ onNavigate }: HeaderProps) {
                 <button
                   key={item.slug}
                   type="button"
-                  onClick={() => { setActiveSlug(item.slug); localStorage.setItem('header_active_slug', item.slug); onNavigate?.(item.slug) }}
-                  className={`text-base font-semibold ${activeSlug === item.slug ? 'text-sky-600' : 'text-cyan-800/80 hover:text-cyan-600'}`}
+                  onClick={() => { localStorage.setItem('header_active_slug', item.slug); onNavigate?.(item.slug) }}
+                  className={`text-base font-semibold ${isActive(item.slug === 'ourStory' ? '#ourStory' : `/${item.slug}`) ? 'text-sky-600' : 'text-cyan-800/80 hover:text-cyan-600'}`}
                 >
                   {item.name}
                 </button>
@@ -183,7 +185,7 @@ export default function Header({ onNavigate }: HeaderProps) {
           <div className="flex items-center justify-between">
             <button
               type="button"
-              onClick={() => { localStorage.removeItem('header_active_slug'); setActiveSlug(null); onNavigate?.('home'); setMobileMenuOpen(false) }}
+              onClick={() => { localStorage.removeItem('header_active_slug'); onNavigate?.('home'); setMobileMenuOpen(false) }}
               className="-m-1.5 p-1.5"
             >
               <span className="sr-only">E-Book Nook</span>
@@ -205,8 +207,8 @@ export default function Header({ onNavigate }: HeaderProps) {
                   <button
                     key={item.slug}
                     type="button"
-                    onClick={() => { setActiveSlug(item.slug); localStorage.setItem('header_active_slug', item.slug); onNavigate?.(item.slug); setMobileMenuOpen(false) }}
-                    className={`-mx-3 block rounded-xl px-3 py-2 text-base sm:text-lg font-semibold sm:font-semibold w-full text-left ${activeSlug === item.slug ? 'text-sky-600' : 'text-cyan-600 hover:text-cyan-500'} hover:bg-white/40`}
+                  onClick={() => { localStorage.setItem('header_active_slug', item.slug); onNavigate?.(item.slug); setMobileMenuOpen(false) }}
+                    className={`-mx-3 block rounded-xl px-3 py-2 text-base sm:text-lg font-semibold sm:font-semibold w-full text-left ${isActive(item.slug === 'ourStory' ? '#ourStory' : `/${item.slug}`) ? 'text-sky-600' : 'text-cyan-600 hover:text-cyan-500'} hover:bg-white/40`}
                   >
                     {item.name}
                   </button>

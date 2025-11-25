@@ -348,7 +348,7 @@ export default function Reviews({ onNavigate }: ReviewsProps) {
             <button
               type="button"
               onClick={() => { if (auth?.currentUser) { setIsFormOpen(true) } else { window.dispatchEvent(new CustomEvent('app:auth:open')); window.dispatchEvent(new CustomEvent('app:notify', { detail: { type: 'error', title: 'Login required', message: 'Please log in to write a review.' } })) } }}
-              className="mt-6 inline-flex w-full items-center justify-center rounded-xl shadow-lg border border-slate-300 bg-slate-50 px-8 py-2 text-base font-medium text-slate-900 hover:bg-cyan-50 sm:w-auto lg:w-full"
+              className="mt-6 inline-flex w-full items-center justify-center rounded-xl shadow-lg border border-slate-300 bg-slate-50 px-8 py-2 text-base font-medium text-slate-900 hover:bg-cyan-700 hover:text-white sm:w-auto lg:w-full"
             >
               Write a review
             </button>
