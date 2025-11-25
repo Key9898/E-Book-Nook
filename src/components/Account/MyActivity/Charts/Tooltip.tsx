@@ -17,8 +17,8 @@ type WeekPoint = { date: string; reading: number; audio: number }
 export function ChartTooltipLabelFormatter({ data, title = "Weekly Activity", desc = "Last 7 days (Sun-Sat)" }: { data: WeekPoint[]; title?: string; desc?: string }) {
   const chartConfig = React.useMemo(() => {
     return {
-      reading: { label: "Reading", color: "var(--chart-1)" },
-      audio: { label: "Audio", color: "var(--chart-2)" },
+      reading: { label: "Reading", color: "#fb7185" },
+      audio: { label: "Audio", color: "#0891b2" },
     } satisfies ChartConfig
   }, [])
 
@@ -40,8 +40,8 @@ export function ChartTooltipLabelFormatter({ data, title = "Weekly Activity", de
                 return new Date(value).toLocaleDateString("en-US", { weekday: "short" })
               }}
             />
-            <Bar dataKey="reading" stackId="a" fill="var(--chart-1)" radius={[0, 0, 4, 4]} />
-            <Bar dataKey="audio" stackId="a" fill="var(--chart-2)" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="reading" stackId="a" fill="var(--color-reading)" radius={[0, 0, 4, 4]} />
+            <Bar dataKey="audio" stackId="a" fill="var(--color-audio)" radius={[4, 4, 0, 0]} />
             <ChartTooltip
               content={
                 <ChartTooltipContent

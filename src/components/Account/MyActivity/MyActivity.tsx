@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { onAuthStateChanged, type User } from 'firebase/auth'
 import { auth, db } from '../../../firebaseConfig'
-import { collection, getDocs, doc, setDoc, getDoc, onSnapshot, deleteDoc, addDoc, serverTimestamp } from 'firebase/firestore'
+import { collection, getDocs, doc, setDoc, onSnapshot, addDoc, serverTimestamp } from 'firebase/firestore'
 import { Calendar } from '@/components/ui/calendar'
 import { ChartLineMultiple } from './Charts/LineChart'
 import { ChartBarDefault } from './Charts/BarChart'
@@ -36,8 +36,10 @@ export default function MyActivity() {
   const [pieData, setPieData] = useState<{ name: string; value: number }[]>([])
   const [weekData, setWeekData] = useState<{ date: string; reading: number; audio: number }[]>([])
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined)
-  const [noteText, setNoteText] = useState('')
   const [activityDates, setActivityDates] = useState<Date[]>([])
+  const [pdfDays, setPdfDays] = useState<number[]>([])
+  const [audioDays, setAudioDays] = useState<number[]>([])
+  const [summaryText, setSummaryText] = useState<string>('')
 
   const weekDeltaLabel = useMemo(() => `${Math.floor(weekMinutes / 60)}h this week`, [weekMinutes])
   const totalHM = useMemo(() => formatHoursMinutes(totalMinutes), [totalMinutes])
@@ -313,29 +315,21 @@ export default function MyActivity() {
       recompute(readingLogs, activityTs, audioLastTs, pdfCompletedTs, audioCompletedTs, totalTarget, unitsSet, totalMin)
       const daysSet = new Set<number>([...readingLastTs, ...audioLastTs, ...pdfCompletedTs, ...audioCompletedTs].map((ts) => startOfDay(Number(ts || 0))).filter((v) => v > 0))
       setActivityDates(Array.from(daysSet).map((ts) => new Date(ts)))
+      setPdfDays(pdfCompletedTs.map((ts) => startOfDay(Number(ts || 0))))
+      setAudioDays(audioCompletedTs.map((ts) => startOfDay(Number(ts || 0))))
     }
     run()
   }, [user?.uid])
 
   useEffect(() => {
-    const loadNote = async () => {
-      try {
-        if (!selectedDate) return
-        const key = new Date(selectedDate).toISOString().slice(0,10)
-        if (user?.uid && db) {
-          const ref = doc(db, 'users', user.uid, 'activityNotes', key)
-          const snap = await getDoc(ref)
-          const data = snap.exists() ? (snap.data() as any) : null
-          setNoteText(String(data?.note || ''))
-        } else {
-          const raw = localStorage.getItem('activityNotes')
-          const obj = raw ? JSON.parse(raw) : {}
-          setNoteText(String((obj?.[key]?.note) || ''))
-        }
-      } catch {}
-    }
-    loadNote()
-  }, [selectedDate, user?.uid])
+    if (!selectedDate) { setSummaryText(''); return }
+    const dayTs = startOfDay(new Date(selectedDate).getTime())
+    const pdfCount = pdfDays.filter((d) => d === dayTs).length
+    const audioCount = audioDays.filter((d) => d === dayTs).length
+    const label = new Date(dayTs).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    if (pdfCount === 0 && audioCount === 0) setSummaryText('No activity recorded.')
+    else setSummaryText(`On ${label}: You completed ${pdfCount} PDF and ${audioCount} Audios.`)
+  }, [selectedDate, pdfDays, audioDays])
 
   const recompute = (
     readingLogs: { minutes: number; ts: number }[],
@@ -371,6 +365,7 @@ export default function MyActivity() {
     setTotalMinutes(totalMin)
     setWeekMinutes(weekMin)
     setStreak(streakCount)
+    setActivityDates(Array.from(days).map((ts) => new Date(ts)))
     const combinedCompleted = (pdfCompletedTs?.length || 0) + (audioCompletedTs?.length || 0)
     const goalDone = Math.min(totalTarget || 0, combinedCompleted)
     setGoalTarget(totalTarget || 0)
@@ -458,6 +453,7 @@ export default function MyActivity() {
       const rpLast = snap.docs.map((d) => Number((d.data() as any)?.lastActivityTs || 0)).filter((x) => x > 0)
       activityTs = [...rpLast]
       pdfCompletedTs = snap.docs.map((d) => Number((d.data() as any)?.completedTs || 0)).filter((x) => x > 0)
+      setPdfDays(pdfCompletedTs.map((ts) => startOfDay(Number(ts || 0))))
       recompute(readingLogs, activityTs, audioLastTs, pdfCompletedTs, audioCompletedTs, totalTarget, units, audioDurMin)
     })
     const u4 = onSnapshot(collection(db, 'users', uid, 'audioProgress'), (snap) => {
@@ -465,6 +461,7 @@ export default function MyActivity() {
       activityTs = [...activityTs, ...apLast]
       audioLastTs = [...apLast]
       audioCompletedTs = snap.docs.map((d) => Number((d.data() as any)?.completedTs || 0)).filter((x) => x > 0)
+      setAudioDays(audioCompletedTs.map((ts) => startOfDay(Number(ts || 0))))
       audioDurMin = Math.floor(snap.docs.reduce((s, d) => s + Math.max(0, Number((d.data() as any)?.durationMs || 0)), 0) / 60000)
       recompute(readingLogs, activityTs, audioLastTs, pdfCompletedTs, audioCompletedTs, totalTarget, units, audioDurMin)
     })
@@ -553,50 +550,17 @@ export default function MyActivity() {
             <div className="text-sm font-bold text-slate-600">Calendar</div>
             <div className="mt-4">
               <Calendar
+                mode="single"
                 selected={selectedDate}
                 onSelect={(d: Date | undefined) => { setSelectedDate(d); }}
-                className="w-full"
+                className="w-full rounded-md border shadow-sm"
                 modifiers={{ activity: activityDates }}
                 classNames={{
                   day: "rdp-day_activity:bg-cyan-50 rdp-day_activity:text-cyan-900 rdp-day_activity:after:content-[''] rdp-day_activity:after:w-1.5 rdp-day_activity:after:h-1.5 rdp-day_activity:after:bg-cyan-600 rdp-day_activity:after:rounded-full rdp-day_activity:after:absolute rdp-day_activity:after:bottom-1 rdp-day_activity:after:left-1/2 rdp-day_activity:after:-translate-x-1/2"
                 }}
               />
             </div>
-            <div className="mt-4">
-              <div className="text-sm text-slate-500">Note</div>
-              <textarea value={noteText} onChange={(e) => setNoteText(e.target.value)} className="mt-2 w-full rounded-md border border-slate-300 p-2" rows={4} placeholder="Write a note for the selected date" />
-              <div className="mt-2 flex gap-3 justify-end">
-                <button type="button" className="rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-xs hover:bg-red-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600" onClick={async () => {
-                  try {
-                    if (!selectedDate) return
-                    const key = new Date(selectedDate).toISOString().slice(0,10)
-                    if (user?.uid && db) {
-                      await deleteDoc(doc(db, 'users', user.uid, 'activityNotes', key))
-                    } else {
-                      const raw = localStorage.getItem('activityNotes')
-                      const obj = raw ? JSON.parse(raw) : {}
-                      delete obj[key]
-                      localStorage.setItem('activityNotes', JSON.stringify(obj))
-                    }
-                    setNoteText('')
-                  } catch {}
-                }}>Delete Note</button>
-                <button type="button" className="rounded-md bg-cyan-700 px-3 py-2 text-sm font-semibold text-white shadow-xs hover:bg-cyan-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-700" onClick={async () => {
-                  try {
-                    if (!selectedDate) return
-                    const key = new Date(selectedDate).toISOString().slice(0,10)
-                    if (user?.uid && db) {
-                      await setDoc(doc(db, 'users', user.uid, 'activityNotes', key), { note: noteText, ts: Date.now() }, { merge: true })
-                    } else {
-                      const raw = localStorage.getItem('activityNotes')
-                      const obj = raw ? JSON.parse(raw) : {}
-                      obj[key] = { note: noteText, ts: Date.now() }
-                      localStorage.setItem('activityNotes', JSON.stringify(obj))
-                    }
-                  } catch {}
-                }}>Save Note</button>
-              </div>
-            </div>
+            <div className="mt-4 text-sm text-slate-600">{summaryText || 'Select a date to see activity summary.'}</div>
           </div>
         </div>
       </div>

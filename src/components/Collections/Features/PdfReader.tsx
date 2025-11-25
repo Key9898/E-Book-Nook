@@ -37,6 +37,7 @@ export default function PdfReader({ bookId, fileUrl, title, coverUrl, onClose }:
 
   const progressRef = useRef<BookProgress>({ totalPages: 0, currentPage: 1 })
   const flushSave = async () => { try { await saveBookProgress(bookId, progressRef.current) } catch {} }
+  const [loadingDoc, setLoadingDoc] = useState<boolean>(true)
 
   useEffect(() => {
     (async () => {
@@ -255,12 +256,12 @@ export default function PdfReader({ bookId, fileUrl, title, coverUrl, onClose }:
                 type="button"
                 aria-label="Previous page"
                 title="Previous page"
-                disabled={page <= 1}
+                disabled={loadingDoc || page <= 1}
                 onClick={() => setPage(p => p - 1)}
                 className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded disabled:opacity-50"
             >
-                <span className="sr-only">Previous page</span>
-                <ChevronLeftIcon aria-hidden className="size-5 dark:text-white"/>
+              <span className="sr-only">Previous page</span>
+              <ChevronLeftIcon aria-hidden className="size-5 dark:text-white"/>
             </button>
             <span className="text-sm font-medium dark:text-white">Page</span>
             <label htmlFor="jumpPage" className="sr-only">Jump to page</label>
@@ -293,18 +294,23 @@ export default function PdfReader({ bookId, fileUrl, title, coverUrl, onClose }:
                 type="button"
                 aria-label="Next page"
                 title="Next page"
-                disabled={page >= numPages}
+                disabled={loadingDoc || page >= numPages}
                 onClick={() => setPage(p => p + 1)}
                 className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded disabled:opacity-50"
             >
-                <span className="sr-only">Next page</span>
-                <ChevronRightIcon aria-hidden className="size-5 dark:text-white"/>
+              <span className="sr-only">Next page</span>
+              <ChevronRightIcon aria-hidden className="size-5 dark:text-white"/>
             </button>
           </div>
         </div>
 
         {/* PDF Document Container */}
         <div className="w-full max-w-4xl shadow-2xl">
+          {loadingDoc && (
+            <div className="mb-3 h-1 w-full overflow-hidden rounded bg-slate-200">
+              <div className="h-1 w-1/3 animate-pulse bg-cyan-600" />
+            </div>
+          )}
           <Document 
             file={fileUrl} 
             onLoadSuccess={({ numPages }) => { 
@@ -314,6 +320,7 @@ export default function PdfReader({ bookId, fileUrl, title, coverUrl, onClose }:
               const next = Math.min(Math.max(target, 1), numPages)
               setPage(next)
               progressRef.current = updateBookOnProgress(progressRef.current, next)
+              setLoadingDoc(false)
             } }
             loading={<div className="text-center py-10 dark:text-white">Loading PDF...</div>}
             error={<div className="text-red-500 py-10">Failed to load PDF!</div>}
