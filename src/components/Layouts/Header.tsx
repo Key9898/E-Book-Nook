@@ -9,8 +9,7 @@ import SignUp from '../Auth/SingUp'
 import { onAuthStateChanged, signOut, type User } from 'firebase/auth'
 import { auth } from '../../firebaseConfig'
 import UserPanel from '../Auth/UserPanel'
-// 1. useLocation ကို import လုပ်ပါ
-import { useLocation } from 'react-router-dom'
+// useLocation မလိုတော့ပါ
 
 interface HeaderProps {
   onNavigate?: (page: string) => void
@@ -30,21 +29,7 @@ export default function Header({ onNavigate }: HeaderProps) {
   const [userEmail, setUserEmail] = useState<string | null>(null)
   const [userDisplayName, setUserDisplayName] = useState<string | null>(null)
   
-  // 2. Manual listener တွေအစား useLocation ကိုသုံးပါ
-  const location = useLocation();
-
-  // 3. Active Logic ကို အဆင့်မြှင့်ထားပါတယ် (Slash ပြဿနာဖြေရှင်းရန်)
-  const isActive = (path: string) => {
-    // Current Path (နောက်ဆုံးက Slash ပါရင် ဖယ်ထုတ်မယ်)
-    const currentPath = location.pathname.replace(/\/$/, "");
-    // Target Path (နောက်ဆုံးက Slash ပါရင် ဖယ်ထုတ်မယ်)
-    const targetPath = path.replace(/\/$/, "");
-
-    if (path.startsWith('#')) {
-      return location.hash === path;
-    }
-    return currentPath === targetPath;
-  }
+  // isActive Logic တွေကို ဖယ်လိုက်ပါပြီ
 
   const handleSignOut = async () => {
     if (!(auth as any)?.app) {
@@ -61,8 +46,6 @@ export default function Header({ onNavigate }: HeaderProps) {
     window.addEventListener('scroll', onScroll)
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
-
-  // 4. hashchange, popstate listener တွေ မလိုတော့လို့ ဖယ်လိုက်ပါပြီ (Clean Code)
 
   useEffect(() => {
     if (!(auth as any)?.app) return
@@ -104,7 +87,7 @@ export default function Header({ onNavigate }: HeaderProps) {
         <div className="flex items-center gap-x-3">
           <button
             type="button"
-            onClick={() => { localStorage.removeItem('header_active_slug'); onNavigate?.('home') }}
+            onClick={() => { onNavigate?.('home') }}
             className="-m-1.5 p-1.5"
           >
             <span className="sr-only">E-Book Nook</span>
@@ -129,12 +112,10 @@ export default function Header({ onNavigate }: HeaderProps) {
                 key={item.slug}
                 type="button"
                 onClick={() => { 
-                   // onClick လုပ်တာနဲ့ localStorage ကိုသိမ်းပြီး onNavigate ခေါ်မယ်
-                   localStorage.setItem('header_active_slug', item.slug); 
                    onNavigate?.(item.slug) 
                 }}
-                // isActive Check: ourStory ဆို Hash ကိုစစ်၊ မဟုတ်ရင် path ကိုစစ်
-                className={`text-base font-semibold ${isActive(item.slug === 'ourStory' ? '#ourStory' : `/${item.slug}`) ? 'text-sky-600' : 'text-cyan-600 hover:text-cyan-500'}`}
+                // Active Color Logic ဖြုတ်လိုက်ပါပြီ။ Hover effect ပဲ ထားပါတော့တယ်။
+                className="text-base font-semibold text-cyan-600 hover:text-cyan-500 transition-colors"
               >
                 {item.name}
               </button>
@@ -150,8 +131,9 @@ export default function Header({ onNavigate }: HeaderProps) {
                 <button
                   key={item.slug}
                   type="button"
-                  onClick={() => { localStorage.setItem('header_active_slug', item.slug); onNavigate?.(item.slug) }}
-                  className={`text-base font-semibold ${isActive(item.slug === 'ourStory' ? '#ourStory' : `/${item.slug}`) ? 'text-sky-600' : 'text-cyan-800/80 hover:text-cyan-600'}`}
+                  onClick={() => { onNavigate?.(item.slug) }}
+                  // Active Color Logic ဖြုတ်လိုက်ပါပြီ။
+                  className="text-base font-semibold text-cyan-800/80 hover:text-cyan-600 transition-colors"
                 >
                   {item.name}
                 </button>
@@ -181,7 +163,7 @@ export default function Header({ onNavigate }: HeaderProps) {
           <div className="flex items-center justify-between">
             <button
               type="button"
-              onClick={() => { localStorage.removeItem('header_active_slug'); onNavigate?.('home'); setMobileMenuOpen(false) }}
+              onClick={() => { onNavigate?.('home'); setMobileMenuOpen(false) }}
               className="-m-1.5 p-1.5"
             >
               <span className="sr-only">E-Book Nook</span>
@@ -203,8 +185,8 @@ export default function Header({ onNavigate }: HeaderProps) {
                   <button
                     key={item.slug}
                     type="button"
-                  onClick={() => { localStorage.setItem('header_active_slug', item.slug); onNavigate?.(item.slug); setMobileMenuOpen(false) }}
-                    className={`-mx-3 block rounded-xl px-3 py-2 text-base sm:text-lg font-semibold sm:font-semibold w-full text-left ${isActive(item.slug === 'ourStory' ? '#ourStory' : `/${item.slug}`) ? 'text-sky-600' : 'text-cyan-600 hover:text-cyan-500'} hover:bg-white/40`}
+                  onClick={() => { onNavigate?.(item.slug); setMobileMenuOpen(false) }}
+                    className="-mx-3 block rounded-xl px-3 py-2 text-base sm:text-lg font-semibold sm:font-semibold w-full text-left text-cyan-600 hover:text-cyan-500 hover:bg-white/40"
                   >
                     {item.name}
                   </button>
