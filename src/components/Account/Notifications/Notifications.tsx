@@ -6,7 +6,7 @@ import { collection, query, where, onSnapshot, updateDoc, doc, arrayUnion } from
 type NoteItem = { id: string, title: string, message: string, type: 'system' | 'personal', to?: string, read?: boolean, createdAt?: any }
 
 export default function Notifications() {
-  const [tab, setTab] = useState<'system' | 'personal'>('system')
+  const [tab, setTab] = useState<'system' | 'personal'>('personal')
   const [items, setItems] = useState<NoteItem[]>([])
   const [uid, setUid] = useState<string>('')
 
@@ -43,6 +43,8 @@ export default function Notifications() {
           const fresh = ts > 0 ? (now - ts) <= maxAgeMs : false
           return perUserUnread && legacyUnread && fresh
         })
+      } else {
+        list = list.filter((n) => !n.read)
       }
       list = list.filter((n) => !dismissed.includes(n.id))
       list.sort((a, b) => Number((b?.createdAt?.toMillis?.() ?? 0)) - Number((a?.createdAt?.toMillis?.() ?? 0)))
@@ -70,9 +72,42 @@ export default function Notifications() {
       } else {
         await updateDoc(doc(db, 'notifications', id), { read: true })
       }
+      setItems((prev) => prev.filter((n) => n.id !== id))
     } catch {
       dismissLocal()
     }
+  }
+
+  const markAllAsRead = async () => {
+    const ids = items.map((n) => n.id)
+    const key = `noti:dismiss:${uid || 'anon'}`
+    if (!db) {
+      try {
+        const raw = localStorage.getItem(key)
+        const arr = raw ? JSON.parse(raw) : []
+        const next = Array.from(new Set([...arr, ...ids]))
+        localStorage.setItem(key, JSON.stringify(next))
+      } catch {}
+      setItems([])
+      return
+    }
+    for (const n of items) {
+      try {
+        if (tab === 'system') {
+          if (!uid) continue
+          await updateDoc(doc(db, 'notifications', n.id), { readBy: arrayUnion(uid) })
+        } else {
+          await updateDoc(doc(db, 'notifications', n.id), { read: true })
+        }
+      } catch {}
+    }
+    try {
+      const raw = localStorage.getItem(key)
+      const arr = raw ? JSON.parse(raw) : []
+      const next = Array.from(new Set([...arr, ...ids]))
+      localStorage.setItem(key, JSON.stringify(next))
+    } catch {}
+    setItems([])
   }
 
   
@@ -81,10 +116,12 @@ export default function Notifications() {
     <div className="sm:px-4 lg:px-8 pt-8">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold text-slate-900">Notifications</h2>
-        <div className="flex items-center gap-2">
-          <button type='button' onClick={() => setTab('system')} className={`rounded-xl px-3 py-1.5 text-sm ${tab==='system'?'bg-cyan-600 text-white':'bg-slate-100 text-slate-700'}`}>System</button>
-          <button type='button' onClick={() => setTab('personal')} className={`rounded-xl px-3 py-1.5 text-sm ${tab==='personal'?'bg-cyan-600 text-white':'bg-slate-100 text-slate-700'}`}>Personal</button>
-        </div>
+      <div className="flex items-center gap-2">
+        <button type='button' onClick={markAllAsRead} className="rounded-xl bg-cyan-700 px-3 py-1.5 text-sm font-semibold text-white hover:bg-cyan-600">Mark all as read</button>
+        <button type='button' onClick={() => setTab(tab==='personal'?'system':'personal')} className="rounded-xl bg-cyan-700 px-3 py-1.5 text-sm font-semibold text-white hover:bg-cyan-600">
+          {tab === 'personal' ? 'System Notifications' : 'Personal Notifications'}
+        </button>
+      </div>
       </div>
 
       <div className="mt-6 space-y-3">
@@ -95,11 +132,11 @@ export default function Notifications() {
           return (
             <div
               key={n.id}
-              className={`rounded-xl border border-slate-200 p-4 flex items-start justify-between ${isUnread ? 'bg-black/40 text-white' : 'bg-white'}`}
+              className={`rounded-xl border border-slate-200 bg-white p-4 flex items-start justify-between`}
             >
               <div>
-                <div className={`text-sm font-semibold ${isUnread ? 'text-white' : 'text-slate-900'}`}>{n.title}</div>
-                <div className={`mt-1 text-sm ${isUnread ? 'text-white/80' : 'text-slate-600'}`}>{n.message}</div>
+                <div className={`text-sm font-semibold text-slate-900`}>{n.title}</div>
+                <div className={`mt-1 text-sm text-slate-600`}>{n.message}</div>
               </div>
               <div className="flex items-center gap-2">
                 {isUnread && (

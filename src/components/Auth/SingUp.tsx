@@ -46,8 +46,20 @@ export default function SignUp({ onBackToSignIn, onClose, onNavigate }: SignUpPr
                 return
               }
               try {
-                await createUserWithEmailAndPassword(auth, email, password)
+                const cred = await createUserWithEmailAndPassword(auth, email, password)
                 window.dispatchEvent(new CustomEvent('app:notify', { detail: { type: 'success', title: 'Account created', message: 'You can now sign in to E-Book Nook.' } }))
+                try {
+                  if (db && cred.user?.uid) {
+                    await addDoc(collection(db, 'notifications'), {
+                      type: 'personal',
+                      to: cred.user.uid,
+                      title: 'Welcome to E-Book Nook',
+                      message: 'Thanks for joining! Explore collections and start reading.',
+                      read: false,
+                      createdAt: serverTimestamp(),
+                    })
+                  }
+                } catch {}
                 if (onBackToSignIn) onBackToSignIn()
               } catch (err: any) {
                 let msg = 'Sign up failed. Please try again.'
@@ -243,4 +255,5 @@ export default function SignUp({ onBackToSignIn, onClose, onNavigate }: SignUpPr
   )
 }
 import { createUserWithEmailAndPassword } from 'firebase/auth'
-import { auth } from '../../firebaseConfig'
+import { auth, db } from '../../firebaseConfig'
+import { addDoc, collection, serverTimestamp } from 'firebase/firestore'

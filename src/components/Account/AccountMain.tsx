@@ -12,7 +12,7 @@ import HelpAndInfo from './Help&Info/Help&Info'
 import { auth, storage, db } from '../../firebaseConfig'
 import { updateProfile, updatePassword, deleteUser, reauthenticateWithCredential, EmailAuthProvider, GoogleAuthProvider, reauthenticateWithPopup, onAuthStateChanged, type UserInfo } from 'firebase/auth'
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage'
-import { collection, query, where, onSnapshot } from 'firebase/firestore'
+import { collection, query, where, onSnapshot, addDoc, serverTimestamp } from 'firebase/firestore'
 
 interface AccountMainProps {
   onNavigate?: (page: string) => void
@@ -174,6 +174,7 @@ export default function AccountMain({ onNavigate }: AccountMainProps) {
                             setPhotoUrl(bustUrl)
                             window.dispatchEvent(new CustomEvent('app:user:changed', { detail: { displayName: username, email, photoURL: bustUrl } }))
                             window.dispatchEvent(new CustomEvent('app:notify', { detail: { type: 'success', title: 'Avatar updated', message: 'Your avatar has been changed.' } }))
+                            try { if (db && user?.uid) { await addDoc(collection(db, 'notifications'), { type: 'personal', to: user.uid, title: 'Profile updated', message: 'Your avatar was updated.', read: false, createdAt: serverTimestamp() }) } } catch {}
                           } catch (err: any) {
                             const emsg = (err?.code || err?.message || '').toString().toLowerCase()
                             const isCors = emsg.includes('cors') || emsg.includes('preflight') || emsg.includes('http error')
@@ -260,6 +261,7 @@ export default function AccountMain({ onNavigate }: AccountMainProps) {
                                 if (username && username !== (user.displayName || '')) await updateProfile(user, { displayName: username })
                                 window.dispatchEvent(new CustomEvent('app:user:changed', { detail: { displayName: username, email: user?.email || email, photoURL: photoUrl } }))
                                 window.dispatchEvent(new CustomEvent('app:notify', { detail: { type: 'success', title: 'Saved', message: 'Profile updated.' } }))
+                                try { if (db && user?.uid) { await addDoc(collection(db, 'notifications'), { type: 'personal', to: user.uid, title: 'Profile updated', message: 'Your profile information was updated.', read: false, createdAt: serverTimestamp() }) } } catch {}
                               }
                               setEditing(false)
                             } catch (err) {
@@ -305,6 +307,7 @@ export default function AccountMain({ onNavigate }: AccountMainProps) {
                   try {
                     await updatePassword(user, newPwd)
                     window.dispatchEvent(new CustomEvent('app:notify', { detail: { type: 'success', title: 'Password updated', message: 'Your password has been changed.' } }))
+                    try { if (db && user?.uid) { await addDoc(collection(db, 'notifications'), { type: 'personal', to: user.uid, title: 'Password changed', message: 'Your account password was changed successfully.', read: false, createdAt: serverTimestamp() }) } } catch {}
                   } catch {
                     window.dispatchEvent(new CustomEvent('app:notify', { detail: { type: 'error', title: 'Update failed', message: 'Could not update password. Please check your current password.' } }))
                   }

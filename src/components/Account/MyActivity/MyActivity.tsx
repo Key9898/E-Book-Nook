@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { onAuthStateChanged, type User } from 'firebase/auth'
 import { auth, db } from '../../../firebaseConfig'
-import { collection, getDocs, doc, setDoc, getDoc, onSnapshot, deleteDoc } from 'firebase/firestore'
+import { collection, getDocs, doc, setDoc, getDoc, onSnapshot, deleteDoc, addDoc, serverTimestamp } from 'firebase/firestore'
 import { Calendar } from '@/components/ui/calendar'
 import { ChartLineMultiple } from './Charts/LineChart'
 import { ChartBarDefault } from './Charts/BarChart'
@@ -44,6 +44,28 @@ export default function MyActivity() {
     if (!goalTarget) return 0
     return Math.max(0, Math.min(100, Math.round((goalCompleted / goalTarget) * 100)))
   }, [goalCompleted, goalTarget])
+
+  useEffect(() => {
+    try {
+      const uid = user?.uid || ''
+      if (!uid || !db) return
+      if (goalTarget > 0 && goalCompleted >= goalTarget) {
+        const key = `goal:notify:${uid}:${goalTarget}`
+        const flagged = localStorage.getItem(key)
+        if (!flagged) {
+          addDoc(collection(db, 'notifications'), {
+            type: 'personal',
+            to: uid,
+            title: 'Reading goal achieved',
+            message: `You completed your reading goal (${goalTarget} ${goalUnitLabel}). Great job!`,
+            read: false,
+            createdAt: serverTimestamp(),
+          }).catch(() => {})
+          localStorage.setItem(key, '1')
+        }
+      }
+    } catch {}
+  }, [goalCompleted, goalTarget, user?.uid, goalUnitLabel])
 
   useEffect(() => {
     const now = Date.now()
