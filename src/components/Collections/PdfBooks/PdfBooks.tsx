@@ -141,6 +141,15 @@ export default function PdfBooks({ onNavigate }: PdfBooksProps) {
       cover: '',
       fileUrl: '/PdfBooks/introduction_to_python_programming.pdf',
     },
+    {
+      id: 'pdf4',
+      title: 'Rockstar Developer 2025',
+      author: 'Sayar Ei Maung',
+      language: 'myanmar',
+      tags: ['learningIT'],
+      cover: '',
+      fileUrl: '/PdfBooks/rockstar_developer_2025.pdf',
+    },
   ]
 
   const pdfKey = (title: string) => {
