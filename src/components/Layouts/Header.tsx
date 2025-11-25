@@ -9,6 +9,8 @@ import SignUp from '../Auth/SingUp'
 import { onAuthStateChanged, signOut, type User } from 'firebase/auth'
 import { auth } from '../../firebaseConfig'
 import UserPanel from '../Auth/UserPanel'
+// 1. useLocation ကို import လုပ်ပါ
+import { useLocation } from 'react-router-dom'
 
 interface HeaderProps {
   onNavigate?: (page: string) => void
@@ -27,11 +29,21 @@ export default function Header({ onNavigate }: HeaderProps) {
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin')
   const [userEmail, setUserEmail] = useState<string | null>(null)
   const [userDisplayName, setUserDisplayName] = useState<string | null>(null)
-  const [loc, setLoc] = useState<{ pathname: string; hash: string }>({ pathname: window.location.pathname, hash: window.location.hash })
+  
+  // 2. Manual listener တွေအစား useLocation ကိုသုံးပါ
+  const location = useLocation();
+
+  // 3. Active Logic ကို အဆင့်မြှင့်ထားပါတယ် (Slash ပြဿနာဖြေရှင်းရန်)
   const isActive = (path: string) => {
-    const { pathname, hash } = loc
-    if (path.startsWith('#')) return hash === path
-    return pathname === path
+    // Current Path (နောက်ဆုံးက Slash ပါရင် ဖယ်ထုတ်မယ်)
+    const currentPath = location.pathname.replace(/\/$/, "");
+    // Target Path (နောက်ဆုံးက Slash ပါရင် ဖယ်ထုတ်မယ်)
+    const targetPath = path.replace(/\/$/, "");
+
+    if (path.startsWith('#')) {
+      return location.hash === path;
+    }
+    return currentPath === targetPath;
   }
 
   const handleSignOut = async () => {
@@ -50,28 +62,7 @@ export default function Header({ onNavigate }: HeaderProps) {
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
-  // Clear persisted selection on home (no longer needed for active state)
-  useEffect(() => {
-    const fromHash = window.location.hash.replace('#', '')
-    if (!fromHash || fromHash === 'home') {
-      try { localStorage.removeItem('header_active_slug') } catch {}
-    }
-  }, [])
-
-  // Keep header selection in sync with hash changes
-  useEffect(() => {
-    const applyFromHash = () => {
-      const h = window.location.hash.replace('#', '')
-      if (!h || h === 'home') {
-        try { localStorage.removeItem('header_active_slug') } catch {}
-      }
-      setLoc({ pathname: window.location.pathname, hash: window.location.hash })
-    }
-    window.addEventListener('hashchange', applyFromHash)
-    const onPop = () => setLoc({ pathname: window.location.pathname, hash: window.location.hash })
-    window.addEventListener('popstate', onPop)
-    return () => { window.removeEventListener('hashchange', applyFromHash); window.removeEventListener('popstate', onPop) }
-  }, [])
+  // 4. hashchange, popstate listener တွေ မလိုတော့လို့ ဖယ်လိုက်ပါပြီ (Clean Code)
 
   useEffect(() => {
     if (!(auth as any)?.app) return
@@ -137,7 +128,12 @@ export default function Header({ onNavigate }: HeaderProps) {
               <button
                 key={item.slug}
                 type="button"
-                onClick={() => { localStorage.setItem('header_active_slug', item.slug); onNavigate?.(item.slug) }}
+                onClick={() => { 
+                   // onClick လုပ်တာနဲ့ localStorage ကိုသိမ်းပြီး onNavigate ခေါ်မယ်
+                   localStorage.setItem('header_active_slug', item.slug); 
+                   onNavigate?.(item.slug) 
+                }}
+                // isActive Check: ourStory ဆို Hash ကိုစစ်၊ မဟုတ်ရင် path ကိုစစ်
                 className={`text-base font-semibold ${isActive(item.slug === 'ourStory' ? '#ourStory' : `/${item.slug}`) ? 'text-sky-600' : 'text-cyan-600 hover:text-cyan-500'}`}
               >
                 {item.name}
