@@ -37,6 +37,7 @@ export default function MyActivity() {
   const [weekData, setWeekData] = useState<{ date: string; reading: number; audio: number }[]>([])
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined)
   const [noteText, setNoteText] = useState('')
+  const [activityDates, setActivityDates] = useState<Date[]>([])
 
   const weekDeltaLabel = useMemo(() => `${Math.floor(weekMinutes / 60)}h this week`, [weekMinutes])
   const totalHM = useMemo(() => formatHoursMinutes(totalMinutes), [totalMinutes])
@@ -308,6 +309,8 @@ export default function MyActivity() {
       // initial compute
       const unitsSet = units
       recompute(finishedDocs, readingLogs, activityTs, audioLastTs, pdfCompletedTs, audioCompletedTs, totalTarget, unitsSet)
+      const daysSet = new Set<number>([...readingLastTs, ...audioLastTs, ...pdfCompletedTs, ...audioCompletedTs].map((ts) => startOfDay(Number(ts || 0))).filter((v) => v > 0))
+      setActivityDates(Array.from(daysSet).map((ts) => new Date(ts)))
     }
     run()
   }, [user?.uid])
@@ -550,7 +553,7 @@ export default function MyActivity() {
           <div className="rounded-xl border border-slate-200 bg-white p-6">
             <div className="text-sm font-bold text-slate-600">Calendar</div>
             <div className="mt-4">
-              <Calendar selected={selectedDate} onSelect={(d: Date | undefined) => { setSelectedDate(d); }} className="w-full text-[11px]" />
+              <Calendar selected={selectedDate} onSelect={(d: Date | undefined) => { setSelectedDate(d); }} className="w-full text-[11px]" modifiers={{ activity: activityDates }} classNames={{ day: "rdp-day_activity:bg-cyan-100 rdp-day_activity:text-cyan-900" }} />
             </div>
             <div className="mt-4">
               <div className="text-sm text-slate-500">Note</div>

@@ -33,6 +33,7 @@ export default function PdfReader({ bookId, fileUrl, title, coverUrl, onClose }:
   const { isDark, toggle } = useDarkMode()
   const saveTimer = useRef<number | null>(null)
   const [reviews, setReviews] = useState<{ id: string; author: string; rating: number; text: string; date: string }[]>([])
+  const [jumpValue, setJumpValue] = useState<string>('1')
 
   const progressRef = useRef<BookProgress>({ totalPages: 0, currentPage: 1 })
   const flushSave = async () => { try { await saveBookProgress(bookId, progressRef.current) } catch {} }
@@ -43,6 +44,7 @@ export default function PdfReader({ bookId, fileUrl, title, coverUrl, onClose }:
       if (loaded && typeof loaded.currentPage === 'number' && loaded.currentPage >= 1) {
         setInitialPage(loaded.currentPage)
         setPage(loaded.currentPage)
+        setJumpValue(String(loaded.currentPage))
         progressRef.current = updateBookOnOpen({ totalPages: loaded.totalPages || 0, currentPage: loaded.currentPage, startedTs: loaded.startedTs, completedTs: loaded.completedTs, lastActivityTs: loaded.lastActivityTs })
         await saveBookProgress(bookId, progressRef.current)
       } else {
@@ -72,6 +74,8 @@ export default function PdfReader({ bookId, fileUrl, title, coverUrl, onClose }:
       void flushSave()
     }
   }, [page, bookId, numPages])
+
+  useEffect(() => { setJumpValue(String(page)) }, [page])
 
   const handleBack = () => {
     const total = numPages || progressRef.current.totalPages || 0
@@ -258,8 +262,32 @@ export default function PdfReader({ bookId, fileUrl, title, coverUrl, onClose }:
                 <span className="sr-only">Previous page</span>
                 <ChevronLeftIcon aria-hidden className="size-5 dark:text-white"/>
             </button>
+            <span className="text-sm font-medium dark:text-white">Page</span>
+            <label htmlFor="jumpPage" className="sr-only">Jump to page</label>
+            <input
+              type="text"
+              value={jumpValue}
+              onChange={(e) => setJumpValue(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key !== 'Enter') return
+                const v = Number.parseInt(jumpValue, 10)
+                if (!Number.isFinite(v)) return
+                if (v < 1) return
+                const total = numPages || progressRef.current.totalPages || 0
+                if (total <= 0) return
+                if (v > total) return
+                setPage(v)
+              }}
+              inputMode="numeric"
+              id="jumpPage"
+              aria-label="Jump to page"
+              title="Jump to page"
+              placeholder="Page #"
+              autoComplete="off"
+              className="w-20 rounded-md border border-slate-300 bg-white px-2 py-1 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-cyan-600 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+            />
             <span className="text-sm font-medium dark:text-white">
-                Page {page} of {numPages || '--'}
+                of {numPages || '--'}
             </span>
             <button 
                 type="button"
