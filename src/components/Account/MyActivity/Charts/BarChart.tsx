@@ -1,4 +1,5 @@
 import { Bar, BarChart as RBarChart, CartesianGrid, XAxis } from "recharts"
+import { cn } from "@/lib/utils"
 import {
   Card,
   CardContent,
@@ -18,14 +19,14 @@ const chartConfig = {
   audio: { label: "Audio", color: "#0891b2" },
 } satisfies ChartConfig
 
-export function ChartBarDefault({ data, title = "Totals by Month", desc = "Last 12 months" }: { data: BarPoint[]; title?: string; desc?: string }) {
+export function ChartBarDefault({ data, title = "Totals by Month", desc = "Last 12 months", className }: { data: BarPoint[]; title?: string; desc?: string; className?: string }) {
   return (
-    <Card>
+    <Card className={cn("flex flex-col", className)}>
       <CardHeader>
         <CardTitle>{title}</CardTitle>
         <CardDescription>{desc}</CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex-1 min-h-0">
         <ChartContainer config={chartConfig}>
           <RBarChart accessibilityLayer data={data}>
             <CartesianGrid vertical={false} />

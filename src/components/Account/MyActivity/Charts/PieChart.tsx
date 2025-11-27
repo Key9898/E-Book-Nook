@@ -1,5 +1,6 @@
 import * as React from "react"
 import { Label, Pie, PieChart } from "recharts"
+import { cn } from "@/lib/utils"
 import {
   Card,
   CardContent,
@@ -14,7 +15,7 @@ export const description = "User activity distribution"
 
 type PieSlice = { name: string; value: number }
 
-export function ChartPieDonutText({ data, title = "Activity Breakdown", desc = "PDF vs Audio" }: { data: PieSlice[]; title?: string; desc?: string }) {
+export function ChartPieDonutText({ data, title = "Activity Breakdown", desc = "PDF vs Audio", className }: { data: PieSlice[]; title?: string; desc?: string; className?: string }) {
   const total = React.useMemo(() => {
     return (Array.isArray(data) ? data : []).reduce((acc, curr) => acc + Number(curr.value || 0), 0)
   }, [data])
@@ -29,7 +30,7 @@ export function ChartPieDonutText({ data, title = "Activity Breakdown", desc = "
   }, [])
 
   return (
-    <Card className="flex flex-col">
+    <Card className={cn("flex flex-col", className)}>
       <CardHeader className="items-center pb-0">
         <CardTitle>{title}</CardTitle>
         <CardDescription>{desc}</CardDescription>

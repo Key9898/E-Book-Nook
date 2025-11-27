@@ -1,4 +1,5 @@
 import { CartesianGrid, Line, LineChart as RLineChart, XAxis } from "recharts"
+import { cn } from "@/lib/utils"
 import {
   Card,
   CardContent,
@@ -18,14 +19,14 @@ const chartConfig = {
   audio: { label: "Audio", color: "#0891b2" },
 } satisfies ChartConfig
 
-export function ChartLineMultiple({ data, title = "Monthly Activity", desc = "Last 12 months" }: { data: LinePoint[]; title?: string; desc?: string }) {
+export function ChartLineMultiple({ data, title = "Monthly Activity", desc = "Last 12 months", className }: { data: LinePoint[]; title?: string; desc?: string; className?: string }) {
   return (
-    <Card>
+    <Card className={cn("flex flex-col", className)}>
       <CardHeader>
         <CardTitle>{title}</CardTitle>
         <CardDescription>{desc}</CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex-1 min-h-0">
         <ChartContainer config={chartConfig}>
           <RLineChart
             accessibilityLayer

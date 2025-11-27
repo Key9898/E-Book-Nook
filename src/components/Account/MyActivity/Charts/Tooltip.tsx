@@ -1,5 +1,6 @@
 import * as React from "react"
 import { CartesianGrid, Line, LineChart, XAxis } from "recharts"
+import { cn } from "@/lib/utils"
 import {
   Card,
   CardContent,
@@ -14,21 +15,20 @@ export const description = "Weekly activity line chart"
 
 type WeekPoint = { date: string; reading: number; audio: number }
 
-export function ChartLineWeekly({ data, title = "Weekly Activity", desc = "Last 7 days (Sun-Sat)" }: { data: WeekPoint[]; title?: string; desc?: string }) {
+export function ChartLineWeekly({ data, title = "Weekly Activity", desc = "Last 7 days (Sun-Sat)", className }: { data: WeekPoint[]; title?: string; desc?: string; className?: string }) {
   const chartConfig = React.useMemo(() => {
     return {
       reading: { label: "Reading (min)", color: "#fb7185" },
       audio: { label: "Audio (sessions)", color: "#0891b2" },
     } satisfies ChartConfig
   }, [])
-
   return (
-    <Card>
+    <Card className={cn("flex flex-col", className)}>
       <CardHeader>
         <CardTitle>{title}</CardTitle>
         <CardDescription>{desc}</CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex-1 min-h-0">
         <ChartContainer config={chartConfig}>
           <LineChart
             accessibilityLayer
