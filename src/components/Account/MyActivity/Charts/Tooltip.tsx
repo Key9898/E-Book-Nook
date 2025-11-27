@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Bar, BarChart, XAxis } from "recharts"
+import { CartesianGrid, Line, LineChart, XAxis } from "recharts"
 import {
   Card,
   CardContent,
@@ -10,15 +10,15 @@ import {
 import type { ChartConfig } from "@/components/ui/chart"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 
-export const description = "Weekly activity with tooltip"
+export const description = "Weekly activity line chart"
 
 type WeekPoint = { date: string; reading: number; audio: number }
 
-export function ChartTooltipLabelFormatter({ data, title = "Weekly Activity", desc = "Last 7 days (Sun-Sat)" }: { data: WeekPoint[]; title?: string; desc?: string }) {
+export function ChartLineWeekly({ data, title = "Weekly Activity", desc = "Last 7 days (Sun-Sat)" }: { data: WeekPoint[]; title?: string; desc?: string }) {
   const chartConfig = React.useMemo(() => {
     return {
-      reading: { label: "Reading", color: "#fb7185" },
-      audio: { label: "Audio", color: "#0891b2" },
+      reading: { label: "Reading (min)", color: "#fb7185" },
+      audio: { label: "Audio (sessions)", color: "#0891b2" },
     } satisfies ChartConfig
   }, [])
 
@@ -30,19 +30,26 @@ export function ChartTooltipLabelFormatter({ data, title = "Weekly Activity", de
       </CardHeader>
       <CardContent>
         <ChartContainer config={chartConfig}>
-          <BarChart accessibilityLayer data={data}>
+          <LineChart
+            accessibilityLayer
+            data={data}
+            margin={{
+              left: 12,
+              right: 12,
+            }}
+          >
+            <CartesianGrid vertical={false} />
             <XAxis
               dataKey="date"
               tickLine={false}
-              tickMargin={10}
               axisLine={false}
+              tickMargin={8}
               tickFormatter={(value) => {
                 return new Date(value).toLocaleDateString("en-US", { weekday: "short" })
               }}
             />
-            <Bar dataKey="reading" stackId="a" fill="var(--color-reading)" radius={[0, 0, 4, 4]} />
-            <Bar dataKey="audio" stackId="a" fill="var(--color-audio)" radius={[4, 4, 0, 0]} />
             <ChartTooltip
+              cursor={false}
               content={
                 <ChartTooltipContent
                   labelFormatter={(value) => {
@@ -50,10 +57,10 @@ export function ChartTooltipLabelFormatter({ data, title = "Weekly Activity", de
                   }}
                 />
               }
-              cursor={false}
-              defaultIndex={0}
             />
-          </BarChart>
+            <Line dataKey="reading" type="monotone" stroke="var(--color-reading)" strokeWidth={2} dot={false} />
+            <Line dataKey="audio" type="monotone" stroke="var(--color-audio)" strokeWidth={2} dot={false} />
+          </LineChart>
         </ChartContainer>
       </CardContent>
     </Card>

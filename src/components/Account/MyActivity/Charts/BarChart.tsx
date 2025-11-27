@@ -11,9 +11,12 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/
 
 export const description = "Monthly totals bar chart"
 
-type BarPoint = { month: string; total: number }
+type BarPoint = { month: string; pdf: number; audio: number }
 
-const chartConfig = { total: { label: "Total", color: "#0891b2" } } satisfies ChartConfig
+const chartConfig = {
+  pdf: { label: "PDF", color: "#fb7185" },
+  audio: { label: "Audio", color: "#0891b2" },
+} satisfies ChartConfig
 
 export function ChartBarDefault({ data, title = "Totals by Month", desc = "Last 12 months" }: { data: BarPoint[]; title?: string; desc?: string }) {
   return (
@@ -35,9 +38,10 @@ export function ChartBarDefault({ data, title = "Totals by Month", desc = "Last 
             />
             <ChartTooltip
               cursor={false}
-              content={<ChartTooltipContent hideLabel />}
+              content={<ChartTooltipContent indicator="dashed" />}
             />
-            <Bar dataKey="total" fill="var(--color-total)" radius={8} />
+            <Bar dataKey="pdf" stackId="a" fill="var(--color-pdf)" radius={[0, 0, 4, 4]} />
+            <Bar dataKey="audio" stackId="a" fill="var(--color-audio)" radius={[4, 4, 0, 0]} />
           </RBarChart>
         </ChartContainer>
       </CardContent>
