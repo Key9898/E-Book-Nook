@@ -39,12 +39,12 @@ function Calendar({
         ...formatters,
       }}
       classNames={{
-        root: cn("w-fit", defaultClassNames.root),
+        root: cn("w-full", defaultClassNames.root),
         months: cn(
-          "flex flex-col sm:flex-row gap-y-4 sm:gap-x-4 sm:gap-y-0",
+          "flex flex-col sm:flex-row gap-y-4 sm:gap-x-4 sm:gap-y-0 w-full",
           defaultClassNames.months
         ),
-        month: cn("space-y-4", defaultClassNames.month),
+        month: cn("space-y-4 w-full", defaultClassNames.month),
         nav: cn(
           "flex items-center gap-1 w-full absolute top-0 inset-x-0 justify-between",
           defaultClassNames.nav
