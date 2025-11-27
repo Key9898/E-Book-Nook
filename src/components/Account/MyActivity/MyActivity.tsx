@@ -530,25 +530,19 @@ export default function MyActivity() {
         </div>
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mt-8">
-        {/* Row 1 */}
-        <div className="lg:col-span-3">
-          <ChartLineMultiple data={lineData} title="Monthly Activity" desc="Last 12 months" className="h-full" />
-        </div>
-        <div className="lg:col-span-1">
-          <ChartPieDonutText data={pieData} title="Activity Breakdown" desc="PDF vs Audio" className="h-full" />
+        {/* Left Main Column */}
+        <div className="lg:col-span-3 space-y-6">
+          <ChartLineMultiple data={lineData} title="Monthly Activity" desc="Last 12 months" />
+          <ChartBarDefault data={barData} title="Totals by Month" desc="Last 12 months" />
         </div>
 
-        {/* Row 2 */}
-        <div className="lg:col-span-2">
-          <ChartBarDefault data={barData} title="Totals by Month" desc="Last 12 months" className="h-full" />
-        </div>
-        <div className="lg:col-span-1">
-          <ChartLineWeekly data={weekData} title="Weekly Activity" desc="Sun - Sat" className="h-full" />
-        </div>
-        <div className="lg:col-span-1">
-          <div className="rounded-xl border border-slate-200 bg-white p-6 h-full flex flex-col">
+        {/* Right Sidebar Column */}
+        <div className="lg:col-span-1 space-y-6">
+          <ChartPieDonutText data={pieData} title="Activity Breakdown" desc="PDF vs Audio" />
+          <ChartLineWeekly data={weekData} title="Weekly Activity" desc="Sun - Sat" />
+          <div className="rounded-xl border border-slate-200 bg-white p-6">
             <div className="text-sm font-bold text-slate-600">Calendar</div>
-            <div className="mt-4 flex-1 flex flex-col justify-center">
+            <div className="mt-4">
               <Calendar
                 mode="single"
                 selected={selectedDate}
