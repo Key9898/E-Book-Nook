@@ -335,6 +335,38 @@ export default function PdfReader({ bookId, fileUrl, title, coverUrl, onClose }:
             />
           </Document>
         </div>
+
+        {/* Reviews Section - Moved here for better flow */}
+        <div className="w-full max-w-4xl mt-10">
+          <div className="flex flex-col rounded-xl bg-white shadow-xl ring-1 ring-black/5 dark:bg-slate-900 dark:ring-white/10">
+            <div className="border-b border-gray-200 px-6 py-4 dark:border-slate-800">
+              <h3 className="text-lg font-bold text-slate-800 dark:text-white">Reviews</h3>
+            </div>
+
+            <div className="max-h-80 overflow-y-auto p-6 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-slate-600">
+              {reviews.length === 0 ? (
+                <p className="text-center text-slate-500 dark:text-slate-400 py-4">No reviews yet</p>
+              ) : (
+                <ul className="space-y-4">
+                  {reviews.map((r) => (
+                    <li key={r.id} className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 p-4">
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold text-slate-900 dark:text-white">{r.author}</span>
+                        {r.date ? <span className="text-xs text-slate-500 dark:text-slate-400">{r.date}</span> : null}
+                      </div>
+                      <div className="mt-1 flex items-center">
+                        {[0, 1, 2, 3, 4].map((i) => (
+                          <StarIcon key={i} aria-hidden className={(r.rating > i ? 'text-yellow-400' : 'text-slate-300') + ' size-4'} />
+                        ))}
+                      </div>
+                      <p className="mt-2 text-sm text-slate-700 dark:text-slate-300 leading-relaxed">{r.text}</p>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
 
       <FavoritesList bookId={bookId} open={openFav} onClose={() => setOpenFav(false)} />
@@ -344,37 +376,6 @@ export default function PdfReader({ bookId, fileUrl, title, coverUrl, onClose }:
       {openNotes && (
         <Notes bookId={bookId} onClose={() => setOpenNotes(false)} />
       )}
-
-      <div className="fixed bottom-6 left-1/2 z-30 w-full max-w-3xl -translate-x-1/2 px-4">
-        <div className="flex flex-col rounded-xl bg-white/95 shadow-2xl backdrop-blur ring-1 ring-black/5 dark:bg-slate-900/95 dark:ring-white/10">
-          <div className="border-b border-gray-200 px-4 py-3 dark:border-slate-800">
-            <h3 className="text-lg font-semibold text-slate-800 dark:text-white">Reviews</h3>
-          </div>
-
-          <div className="max-h-64 overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-slate-600">
-            {reviews.length === 0 ? (
-              <p className="text-sm text-slate-600 dark:text-slate-400">No reviews yet</p>
-            ) : (
-              <ul className="space-y-3">
-                {reviews.map((r) => (
-                  <li key={r.id} className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-slate-900 dark:text-white">{r.author}</span>
-                      {r.date ? <span className="text-xs text-slate-500 dark:text-slate-400">{r.date}</span> : null}
-                    </div>
-                    <div className="mt-1 flex items-center">
-                      {[0, 1, 2, 3, 4].map((i) => (
-                        <StarIcon key={i} aria-hidden className={(r.rating > i ? 'text-yellow-400' : 'text-slate-300') + ' size-4'} />
-                      ))}
-                    </div>
-                    <p className="mt-2 text-sm text-slate-700 dark:text-slate-300">{r.text}</p>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        </div>
-      </div>
 
     </div>
   )
